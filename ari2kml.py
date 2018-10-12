@@ -3,11 +3,16 @@
 import csv, argparse, datetime
 import numpy as np
 import xml.etree.ElementTree
+import sys
+
+MIN_PYTHON = (3, 6)
+if sys.version_info < MIN_PYTHON:
+    sys.exit('Python %s.%s or later is required.\n' % MIN_PYTHON)
 
 parser = argparse.ArgumentParser(description='Convert ARISense sampled data to KML files')
 parser.add_argument('-g', required=True, metavar='GPX-FILE', help='the GPX file describing the path')
 parser.add_argument('-d', required=True, metavar='D-DATA-FILE', help='the ARISense D-data file (gas and environmental data)')
-#parser.add_argument('-p', required=True, metavar='P-DATA-FILE', help='the ARISense P-data file (particle data)')
+parser.add_argument('-p', required=True, metavar='P-DATA-FILE', help='the ARISense P-data file (particle data)')
 
 args = parser.parse_args()
 
@@ -37,33 +42,54 @@ print(track_lon)
 
 
 ##############################################################################
+# ARISense file reading
+
+def read_arisense(filename, data_type, fields):
+    data = {'timestamps': []}
+    for field in fields:
+        data[field['name']] = []
+    with open(filename, newline='') as inf:
+        reader = csv.reader(inf, delimiter=',')
+        for (i, row) in enumerate(reader):
+            if (len(row) < 1):
+                continue
+            if row[0] != data_type:
+                raise Exception(f'{filename}:{i+1}: line does not start with "{data_type}"')
+            time_string = row[1]
+            try:
+                time = datetime.datetime.strptime(time_string, '%m/%d/%Y %H:%M:%S')
+            except ValueError:
+                raise Exception(f'{filename}:{i+1}: unable to interpret the date string: {date_string}')
+            data['timestamps'].append(time.timestamp())
+            for field in fields:
+                data[field['name']].append(row[field['index']])
+    data['timestamps'] = np.array(data['timestamps'], dtype=np.float64)
+    for field in fields:
+        data[field['name']] = np.array(data[field['name']], dtype=np.float64)
+    return data
+
+
+##############################################################################
 # Read D-data file
 
 d_fields = [
     {'name': 'CO', 'index': 13},
 ]
 
-d_data = {'timestamps': []}
-for d_field in d_fields:
-    d_data[d_field['name']] = []
-with open(args.d, newline='') as d_file:
-    d_reader = csv.reader(d_file, delimiter=',')
-    for (i, row) in enumerate(d_reader):
-        if (len(row) < 1):
-            continue
-        if row[0] != 'D':
-            raise Exception(f'{args.d}:{i+1}: line does not start with "D"')
-        time_string = row[1]
-        try:
-            time = datetime.datetime.strptime(time_string, '%m/%d/%Y %H:%M:%S')
-        except ValueError:
-            raise Exception(f'{args.d}:{i+1}: unable to interpret the date string: {date_string}')
-        d_data['timestamps'].append(time.timestamp())
-        for d_field in d_fields:
-            d_data[d_field['name']].append(row[d_field['index']])
-d_data['timestamps'] = np.array(d_data['timestamps'], dtype=np.float64)
+d_data = read_arisense(args.d, 'D', d_fields)
 print(d_data['timestamps'])
 for d_field in d_fields:
-    d_data[d_field['name']] = np.array(d_data[d_field['name']], dtype=np.float64)
     print(d_data[d_field['name']])
 
+
+##############################################################################
+# Read P-data file
+
+p_fields = [
+    {'name': 'small_conc', 'index': 25},
+]
+
+p_data = read_arisense(args.p, 'P', p_fields)
+print(p_data['timestamps'])
+for p_field in p_fields:
+    print(p_data[p_field['name']])
