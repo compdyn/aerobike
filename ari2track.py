@@ -191,4 +191,4 @@ if __name__ == '__main__':
     kml_prefix = os.path.join(output_head, output_root)
     for field in all_fields:
         filename = kml_prefix + '_' + field['name'] + '.kml'
-        write_kml(filename, field['name'], all_data_interp[field['name']], track, 'jet')
+        write_kml(filename, field['name'], all_data_interp[field['name']], track, 'jet_r')
