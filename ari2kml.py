@@ -48,7 +48,7 @@ def read_gpx(filename):
     root = tree.getroot()
     trkpts = root.findall('.//{http://www.topografix.com/GPX/1/1}trkpt')
     track = {}
-    track['times'] = []
+    track['timestrings'] = []
     track['timestamps'] = []
     track['lat'] = []
     track['lon'] = []
@@ -58,7 +58,7 @@ def read_gpx(filename):
         trkpt_time = trkpt.findall('./{http://www.topografix.com/GPX/1/1}time')
         time_string = trkpt_time[0].text
         time = datetime.datetime.strptime(time_string, '%Y-%m-%dT%H:%M:%SZ')
-        track['times'].append(time)
+        track['timestrings'].append(time.isoformat() + 'Z')
         track['timestamps'].append(time.timestamp())
     track['timestamps'] = np.array(track['timestamps'], np.float64)
     track['lat'] = np.array(track['lat'], np.float64)
@@ -116,9 +116,9 @@ def write_csv(filename, ari_interp_data, fields, track):
             row.append(field['name'])
         writer.writerow(row)
 
-        for i in range(len(track['times'])):
+        for i in range(len(track['timestamps'])):
             row = []
-            row.append(track['times'][i].isoformat() + 'Z')
+            row.append(track['timestrings'][i])
             row.append(track['lat'][i])
             row.append(track['lon'][i])
             for field in fields:
@@ -134,9 +134,9 @@ def write_kml(filename, name, data, track, cmap):
     ns_prefix = '{' + ns + '}'
     kml = ET.Element(ns_prefix + 'kml')
     document = ET.SubElement(kml, ns_prefix + 'Document')
-    name_elem = ET.SubElement(document, ns_prefix + 'name')
-    name_elem.text = name
-    name_elem.tail = '\n'
+    document_name = ET.SubElement(document, ns_prefix + 'name')
+    document_name.text = name
+    document_name.tail = '\n'
 
     norm = matplotlib.colors.Normalize(vmin=data.min(), vmax=data.max())
     cm = matplotlib.cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -146,10 +146,15 @@ def write_kml(filename, name, data, track, cmap):
 
         placemark = ET.SubElement(document, ns_prefix + 'Placemark')
         placemark.tail = '\n'
+        placemark_name = ET.SubElement(placemark, ns_prefix + 'name')
+        placemark_name.text = f'{name} = {data[i]}'
+        description = ET.SubElement(placemark, ns_prefix + 'description')
+        description.text = f'time = {track["timestrings"][i]}'
         linestring = ET.SubElement(placemark, ns_prefix + 'LineString')
         coordinates = ET.SubElement(linestring, ns_prefix + 'coordinates')
         coordinates.text = '%f,%f %f,%f' % (track['lon'][i], track['lat'][i], track['lon'][i+1], track['lat'][i+1])
-        linestyle = ET.SubElement(placemark, ns_prefix + 'LineStyle')
+        style = ET.SubElement(placemark, ns_prefix + 'Style')
+        linestyle = ET.SubElement(style, ns_prefix + 'LineStyle')
         linecolor = ET.SubElement(linestyle, ns_prefix + 'color')
         linecolor.text = color_string
         width = ET.SubElement(linestyle, ns_prefix + 'width')
