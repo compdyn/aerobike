@@ -4,7 +4,7 @@
 # ARISense file format: https://arisense.io/docs/api#data-format
 
 d_fields = [
-    {'name': 'CO', 'index': 13},
+    {'name': 'CO', 'index': 13, 'subtract_index': 12},
 ]
 
 p_fields = [
@@ -87,7 +87,10 @@ def read_arisense(filename, data_type, fields):
                 raise Exception(f'{filename}:{i+1}: unable to interpret the date string: {date_string}')
             data['timestamps'].append(time.timestamp())
             for field in fields:
-                data[field['name']].append(row[field['index']])
+                val = float(row[field['index']])
+                if 'subtract_index' in field:
+                    val -= float(row[field['subtract_index']])
+                data[field['name']].append(val)
     data['timestamps'] = np.array(data['timestamps'], dtype=np.float64)
     for field in fields:
         data[field['name']] = np.array(data[field['name']], dtype=np.float64)
