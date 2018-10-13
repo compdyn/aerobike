@@ -4,11 +4,18 @@
 # ARISense file format: https://arisense.io/docs/api#data-format
 
 d_fields = [
+    {'name': 'T', 'index': 4},
+    {'name': 'RH', 'index': 5},
     {'name': 'CO', 'index': 13, 'subtract_index': 12},
+    {'name': 'NO2', 'index': 17, 'subtract_index': 16},
+    {'name': 'Ox', 'index': 21, 'subtract_index': 20},
+    {'name': 'NO', 'index': 25, 'subtract_index': 24},
 ]
 
 p_fields = [
     {'name': 'small_conc', 'index': 25},
+    {'name': 'medium_conc', 'index': 26},
+    {'name': 'large_conc', 'index': 27},
 ]
 
 
