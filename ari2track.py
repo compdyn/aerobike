@@ -89,7 +89,7 @@ import matplotlib, matplotlib.cm
 def get_args():
     parser = argparse.ArgumentParser(
         description='Convert ARISense sampled data to interpolated data on a GPS track.',
-        epilog='Example:\npython ari2track.py -g data/ARISense_Ride_1.gpx -d data/D_181011.TXT -p data/P_181011.TXT -o out/Ride_1_interp.csv',
+        epilog='Example:\npython ari2track.py -g data/Ride_1.gpx -d data/D_181011.TXT -p data/P_181011.TXT -o out/Ride_1_interp.csv',
         formatter_class=argparse.RawTextHelpFormatter
     )
     parser.add_argument('-g', required=True, metavar='GPX-FILE', help='the GPX file describing the track')
